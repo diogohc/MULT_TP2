@@ -19,16 +19,22 @@ import scipy.stats as st
 warnings.filterwarnings("ignore")
 
 sampleRate = 22050
-window_length = 92.88
+WL = 92.88
 useMono = True
-frame_length = 92.88 
+frame_length = 92.88
 ms = 23.22
 hop_length = 23.22
 dim_mfcc = 13
 num_stats = 7
 
-def ler_fich_features():
-    nome_fich = "./ficheiros/top100_features.csv"
+
+filesPath = "./dataset/all/"
+files = os.listdir(filesPath)
+numFiles = len(files)
+
+
+
+def ler_fich_features(nome_fich):
 
     data = np.genfromtxt(nome_fich, delimiter=",")
 
@@ -54,8 +60,17 @@ def normalizar_features(m):
     return m_normalizada
 
 
-def escrever_em_ficheiro_csv(matriz):
-    np.savetxt("./ficheiros/top100_features_normalizadas.csv", matriz)
+def normalizar_vetor(v):
+    v_normalizado = v
+    for i in range(v.shape[0]):
+        maximo = v.max()
+        minimo = v.min()
+        v_normalizado[i] = (v[i]-minimo) / (maximo-minimo)
+    return v_normalizado
+
+
+def escrever_em_ficheiro_csv(nome, matriz):
+    np.savetxt(nome, matriz, delimiter=',')
     
 def calcular_estatisticas(array):
     array=array.flatten()
@@ -87,7 +102,9 @@ def extrair_mfcc_e_calcular_stats(nome_ficheiro):
         minimo = np.min(mfcc[i:,])
         mfcc_stats[i:,] = np.array([media, stdev, skewness, kurtosis, median, maximo, minimo])
         #mfcc_stats[i:,] = calcular_estatisticas(mfcc[i,:])
+        
     mfcc_stats=mfcc_stats.flatten()
+
     return mfcc_stats
 
 
@@ -95,19 +112,120 @@ def extrair_mfcc_e_calcular_stats(nome_ficheiro):
 
 def extrair_spec_centroid_e_calcular_stats(nome_ficheiro):
     fich = librosa.load(nome_ficheiro)[0]
-    sc = librosa.feature.spectral_centroid(fich, sr=sampleRate, hop_length=hop_length, 
-                                           win_length=window_length)
+    sc = librosa.feature.spectral_centroid(fich, sr=sampleRate)
     sc_stats = calcular_estatisticas(sc)
     return sc_stats
 
 
 def extrair_spec_bandwith_e_calcular_stats(nome_ficheiro):
     fich = librosa.load(nome_ficheiro)[0]
-    spec_bw = librosa.feature.spectral_bandwidth(fich, sr=sampleRate, hop_length=hop_length, 
-                                           win_length=window_length)
+    spec_bw = librosa.feature.spectral_bandwidth(fich, sr=sampleRate)
     spec_bw_stats = calcular_estatisticas(spec_bw)
     return spec_bw_stats
     
+
+
+def extrair_spec_contrast_e_calcular_stats(nome_ficheiro):
+    fich= librosa.load(nome_ficheiro)[0]
+    spec_cont=librosa.feature.spectral_contrast(fich, sr=sampleRate)
+    spec_cont_stats=calcular_estatisticas(spec_cont)
+    return spec_cont_stats
+
+
+def extrair_spec_flatness_e_calcular_stats(nome_ficheiro):
+    fich= librosa.load(nome_ficheiro)[0]
+    spec_flat = librosa.feature.spectral_flatness(fich)
+    spec_flat_stats=calcular_estatisticas(spec_flat)
+    return spec_flat_stats
+
+
+def extrair_spec_rolloff_e_calcular_stats(nome_ficheiro):
+    fich= librosa.load(nome_ficheiro)[0]
+    spec_roll = librosa.feature.spectral_rolloff(fich, sr=sampleRate)
+    spec_roll_stats=calcular_estatisticas(spec_roll)
+    return spec_roll_stats
+
+
+def extrair_freq_fundamental_e_calcular_stats(nome_ficheiro):
+    fich, fs= librosa.load(nome_ficheiro)
+
+    freq_fund = librosa.yin(fich, sr=sampleRate, fmin=20, fmax=fs/2)
+
+
+    freq_fund[freq_fund==max(freq_fund)]=0
+    
+    freq_fund_stats = calcular_estatisticas(freq_fund)
+    return freq_fund_stats
+
+
+def extrair_rms_e_calcular_stats(nome_ficheiro):
+    fich = librosa.load(nome_ficheiro)[0]
+    rms = librosa.feature.rms(fich)
+    
+    rms_stats = calcular_estatisticas(rms)
+    return rms_stats
+
+
+
+def extrair_zcr_e_calcular_stats(nome_ficheiro):
+    fich = librosa.load(nome_ficheiro)[0]
+    zcr = librosa.feature.zero_crossing_rate(fich)
+    
+    zcr_stats = calcular_estatisticas(zcr)
+    return zcr_stats
+
+
+def extrair_tempo(nome_ficheiro):
+    fich = librosa.load(nome_ficheiro)[0]
+    
+    tempo= librosa.beat.tempo(fich)
+    return tempo
+
+
+
+def extrair_features():
+    features_extraidas=[148*[0]]
+    features_extraidas=np.asarray(features_extraidas)
+
+    for i in range(numFiles):
+        arr=[]
+        mfcc = extrair_mfcc_e_calcular_stats(filesPath+files[i])
+        
+        scent = extrair_spec_centroid_e_calcular_stats(filesPath+files[i])
+        
+        sband = extrair_spec_bandwith_e_calcular_stats(filesPath+files[i])
+        
+        scont = extrair_spec_contrast_e_calcular_stats(filesPath+files[i])
+        
+        sflat = extrair_spec_flatness_e_calcular_stats(filesPath+files[i])
+        
+        sroll = extrair_spec_rolloff_e_calcular_stats(filesPath+files[i])
+        
+        freq_fund = extrair_freq_fundamental_e_calcular_stats(filesPath+files[i])
+        
+        rms = extrair_rms_e_calcular_stats(filesPath+files[i])
+        
+        zcr = extrair_zcr_e_calcular_stats(filesPath+files[i])
+        
+        tempo = extrair_tempo(filesPath+files[i])
+    
+    
+        arr=np.append(mfcc,scent)
+        arr=np.append(arr,sband)
+        arr=np.append(arr,scont)
+        arr=np.append(arr,sflat)
+        arr=np.append(arr,sroll)
+        arr=np.append(arr,freq_fund)
+        arr=np.append(arr, rms)
+        arr=np.append(arr, zcr)
+        arr=np.append(arr, tempo)
+    
+        features_extraidas=np.vstack([features_extraidas, arr])
+        print(i)
+
+    escrever_em_ficheiro_csv("./ficheiros/features_extraidas.csv",features_extraidas[1:])
+    
+
 
 if __name__ == "__main__":
     plt.close('all')
@@ -146,17 +264,18 @@ if __name__ == "__main__":
     plt.title('RMS')
     """
     
-    matriz = ler_fich_features()
+    matriz = ler_fich_features("./ficheiros/top100_features.csv")
+    print(matriz.shape)
     m = normalizar_features(matriz)
-    escrever_em_ficheiro_csv(m)
-    
-    filesPath = "./dataset/all/"
-    files = os.listdir(filesPath)
-    numFiles = len(files)
-    extrair_mfcc_e_calcular_stats(filesPath+files[0])
-    #extrair_spectral_centroid_e_calcular_stats(filesPath+files[0])
+    escrever_em_ficheiro_csv("./ficheiros/top100_features_normalizadas.csv",m)
     
 
-
-
+    #extrair_features()
+    
+    
+    matriz_features_extraidas= np.genfromtxt("./ficheiros/features_extraidas.csv", delimiter=",")
+    print(matriz_features_extraidas.shape)
+    print(matriz_features_extraidas[0])
+    mfeatures=normalizar_features(matriz_features_extraidas)
+    escrever_em_ficheiro_csv("./ficheiros/features_normalizadas.csv",mfeatures)
     
