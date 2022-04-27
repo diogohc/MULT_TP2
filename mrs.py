@@ -85,8 +85,7 @@ def calcular_estatisticas(array):
     return array_stats
 
 
-def extrair_mfcc_e_calcular_stats(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_mfcc_e_calcular_stats(fich):
 
     mfcc= librosa.feature.mfcc(fich, sr= sampleRate, n_mfcc = dim_mfcc)
     nl, nc = mfcc.shape
@@ -109,45 +108,37 @@ def extrair_mfcc_e_calcular_stats(nome_ficheiro):
 
 
 
-
-def extrair_spec_centroid_e_calcular_stats(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_spec_centroid_e_calcular_stats(fich):
     sc = librosa.feature.spectral_centroid(fich, sr=sampleRate)
     sc_stats = calcular_estatisticas(sc)
     return sc_stats
 
 
-def extrair_spec_bandwith_e_calcular_stats(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_spec_bandwith_e_calcular_stats(fich):
     spec_bw = librosa.feature.spectral_bandwidth(fich, sr=sampleRate)
     spec_bw_stats = calcular_estatisticas(spec_bw)
     return spec_bw_stats
     
 
-
-def extrair_spec_contrast_e_calcular_stats(nome_ficheiro):
-    fich= librosa.load(nome_ficheiro)[0]
+def extrair_spec_contrast_e_calcular_stats(fich):
     spec_cont=librosa.feature.spectral_contrast(fich, sr=sampleRate)
     spec_cont_stats=calcular_estatisticas(spec_cont)
     return spec_cont_stats
 
 
-def extrair_spec_flatness_e_calcular_stats(nome_ficheiro):
-    fich= librosa.load(nome_ficheiro)[0]
+def extrair_spec_flatness_e_calcular_stats(fich):
     spec_flat = librosa.feature.spectral_flatness(fich)
     spec_flat_stats=calcular_estatisticas(spec_flat)
     return spec_flat_stats
 
 
-def extrair_spec_rolloff_e_calcular_stats(nome_ficheiro):
-    fich= librosa.load(nome_ficheiro)[0]
+def extrair_spec_rolloff_e_calcular_stats(fich):
     spec_roll = librosa.feature.spectral_rolloff(fich, sr=sampleRate)
     spec_roll_stats=calcular_estatisticas(spec_roll)
     return spec_roll_stats
 
 
-def extrair_freq_fundamental_e_calcular_stats(nome_ficheiro):
-    fich, fs= librosa.load(nome_ficheiro)
+def extrair_freq_fundamental_e_calcular_stats(fich, fs):
 
     freq_fund = librosa.yin(fich, sr=sampleRate, fmin=20, fmax=fs/2)
 
@@ -158,25 +149,21 @@ def extrair_freq_fundamental_e_calcular_stats(nome_ficheiro):
     return freq_fund_stats
 
 
-def extrair_rms_e_calcular_stats(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_rms_e_calcular_stats(fich):
     rms = librosa.feature.rms(fich)
     
     rms_stats = calcular_estatisticas(rms)
     return rms_stats
 
 
-
-def extrair_zcr_e_calcular_stats(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_zcr_e_calcular_stats(fich):
     zcr = librosa.feature.zero_crossing_rate(fich)
     
     zcr_stats = calcular_estatisticas(zcr)
     return zcr_stats
 
 
-def extrair_tempo(nome_ficheiro):
-    fich = librosa.load(nome_ficheiro)[0]
+def extrair_tempo(fich): 
     
     tempo= librosa.beat.tempo(fich)
     return tempo
@@ -184,31 +171,33 @@ def extrair_tempo(nome_ficheiro):
 
 
 def extrair_features():
-    features_extraidas=[148*[0]]
+    features_extraidas=[190*[0]]
     features_extraidas=np.asarray(features_extraidas)
 
     for i in range(numFiles):
+        nome_ficheiro=filesPath+files[i]
+        fich, fs = librosa.load(nome_ficheiro)
         arr=[]
-        mfcc = extrair_mfcc_e_calcular_stats(filesPath+files[i])
+        mfcc = extrair_mfcc_e_calcular_stats(fich)
         
-        scent = extrair_spec_centroid_e_calcular_stats(filesPath+files[i])
+        scent = extrair_spec_centroid_e_calcular_stats(fich)
         
-        sband = extrair_spec_bandwith_e_calcular_stats(filesPath+files[i])
+        sband = extrair_spec_bandwith_e_calcular_stats(fich)
         
-        scont = extrair_spec_contrast_e_calcular_stats(filesPath+files[i])
+        scont = extrair_spec_contrast_e_calcular_stats(fich)
         
-        sflat = extrair_spec_flatness_e_calcular_stats(filesPath+files[i])
+        sflat = extrair_spec_flatness_e_calcular_stats(fich)
         
-        sroll = extrair_spec_rolloff_e_calcular_stats(filesPath+files[i])
+        sroll = extrair_spec_rolloff_e_calcular_stats(fich)
         
-        freq_fund = extrair_freq_fundamental_e_calcular_stats(filesPath+files[i])
+        freq_fund = extrair_freq_fundamental_e_calcular_stats(fich, fs)
         
-        rms = extrair_rms_e_calcular_stats(filesPath+files[i])
+        rms = extrair_rms_e_calcular_stats(fich)
         
-        zcr = extrair_zcr_e_calcular_stats(filesPath+files[i])
+        zcr = extrair_zcr_e_calcular_stats(fich)
         
-        tempo = extrair_tempo(filesPath+files[i])
-    
+        tempo = extrair_tempo(fich)
+        
     
         arr=np.append(mfcc,scent)
         arr=np.append(arr,sband)
