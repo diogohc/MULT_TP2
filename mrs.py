@@ -15,6 +15,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import scipy.stats as st
+from scipy.spatial import distance
 
 warnings.filterwarnings("ignore")
 
@@ -72,6 +73,7 @@ def normalizar_vetor(v):
 def escrever_em_ficheiro_csv(nome, matriz):
     np.savetxt(nome, matriz, delimiter=',')
     
+    
 def calcular_estatisticas(array):
     array=array.flatten()
     media = np.mean(array)
@@ -85,9 +87,9 @@ def calcular_estatisticas(array):
     return array_stats
 
 
-def extrair_mfcc_e_calcular_stats(fich):
+def extrair_mfcc_e_calcular_stats(y):
 
-    mfcc= librosa.feature.mfcc(fich, sr= sampleRate, n_mfcc = dim_mfcc)
+    mfcc= librosa.feature.mfcc(y, n_mfcc = dim_mfcc)
     nl, nc = mfcc.shape
     mfcc_stats=np.zeros((nl,num_stats))
     #calcular estatisticas
@@ -108,39 +110,39 @@ def extrair_mfcc_e_calcular_stats(fich):
 
 
 
-def extrair_spec_centroid_e_calcular_stats(fich):
-    sc = librosa.feature.spectral_centroid(fich, sr=sampleRate)
+def extrair_spec_centroid_e_calcular_stats(y):
+    sc = librosa.feature.spectral_centroid(y, sr=sampleRate)
     sc_stats = calcular_estatisticas(sc)
     return sc_stats
 
 
-def extrair_spec_bandwith_e_calcular_stats(fich):
-    spec_bw = librosa.feature.spectral_bandwidth(fich, sr=sampleRate)
+def extrair_spec_bandwith_e_calcular_stats(y):
+    spec_bw = librosa.feature.spectral_bandwidth(y, sr=sampleRate)
     spec_bw_stats = calcular_estatisticas(spec_bw)
     return spec_bw_stats
     
 
-def extrair_spec_contrast_e_calcular_stats(fich):
-    spec_cont=librosa.feature.spectral_contrast(fich, sr=sampleRate)
+def extrair_spec_contrast_e_calcular_stats(y):
+    spec_cont=librosa.feature.spectral_contrast(y, sr=sampleRate)
     spec_cont_stats=calcular_estatisticas(spec_cont)
     return spec_cont_stats
 
 
-def extrair_spec_flatness_e_calcular_stats(fich):
-    spec_flat = librosa.feature.spectral_flatness(fich)
+def extrair_spec_flatness_e_calcular_stats(y):
+    spec_flat = librosa.feature.spectral_flatness(y)
     spec_flat_stats=calcular_estatisticas(spec_flat)
     return spec_flat_stats
 
 
-def extrair_spec_rolloff_e_calcular_stats(fich):
-    spec_roll = librosa.feature.spectral_rolloff(fich, sr=sampleRate)
+def extrair_spec_rolloff_e_calcular_stats(y):
+    spec_roll = librosa.feature.spectral_rolloff(y)
     spec_roll_stats=calcular_estatisticas(spec_roll)
     return spec_roll_stats
 
 
-def extrair_freq_fundamental_e_calcular_stats(fich, fs):
+def extrair_freq_fundamental_e_calcular_stats(y, fs):
 
-    freq_fund = librosa.yin(fich, sr=sampleRate, fmin=20, fmax=fs/2)
+    freq_fund = librosa.yin(y, fmin=20, fmax=fs/2)
 
 
     freq_fund[freq_fund==max(freq_fund)]=0
@@ -149,23 +151,23 @@ def extrair_freq_fundamental_e_calcular_stats(fich, fs):
     return freq_fund_stats
 
 
-def extrair_rms_e_calcular_stats(fich):
-    rms = librosa.feature.rms(fich)
+def extrair_rms_e_calcular_stats(y):
+    rms = librosa.feature.rms(y)
     
     rms_stats = calcular_estatisticas(rms)
     return rms_stats
 
 
-def extrair_zcr_e_calcular_stats(fich):
-    zcr = librosa.feature.zero_crossing_rate(fich)
+def extrair_zcr_e_calcular_stats(y):
+    zcr = librosa.feature.zero_crossing_rate(y)
     
     zcr_stats = calcular_estatisticas(zcr)
     return zcr_stats
 
 
-def extrair_tempo(fich): 
+def extrair_tempo(y): 
     
-    tempo= librosa.beat.tempo(fich)
+    tempo= librosa.beat.tempo(y)
     return tempo
 
 
@@ -176,27 +178,27 @@ def extrair_features():
 
     for i in range(numFiles):
         nome_ficheiro=filesPath+files[i]
-        fich, fs = librosa.load(nome_ficheiro)
+        y, fs = librosa.load(nome_ficheiro)
         arr=[]
-        mfcc = extrair_mfcc_e_calcular_stats(fich)
+        mfcc = extrair_mfcc_e_calcular_stats(y)
         
-        scent = extrair_spec_centroid_e_calcular_stats(fich)
+        scent = extrair_spec_centroid_e_calcular_stats(y)
         
-        sband = extrair_spec_bandwith_e_calcular_stats(fich)
+        sband = extrair_spec_bandwith_e_calcular_stats(y)
         
-        scont = extrair_spec_contrast_e_calcular_stats(fich)
+        scont = extrair_spec_contrast_e_calcular_stats(y)
         
-        sflat = extrair_spec_flatness_e_calcular_stats(fich)
+        sflat = extrair_spec_flatness_e_calcular_stats(y)
         
-        sroll = extrair_spec_rolloff_e_calcular_stats(fich)
+        sroll = extrair_spec_rolloff_e_calcular_stats(y)
         
-        freq_fund = extrair_freq_fundamental_e_calcular_stats(fich, fs)
+        freq_fund = extrair_freq_fundamental_e_calcular_stats(y, fs)
         
-        rms = extrair_rms_e_calcular_stats(fich)
+        rms = extrair_rms_e_calcular_stats(y)
         
-        zcr = extrair_zcr_e_calcular_stats(fich)
+        zcr = extrair_zcr_e_calcular_stats(y)
         
-        tempo = extrair_tempo(fich)
+        tempo = extrair_tempo(y)
         
     
         arr=np.append(mfcc,scent)
@@ -214,6 +216,43 @@ def extrair_features():
 
     escrever_em_ficheiro_csv("./ficheiros/features_extraidas.csv",features_extraidas[1:])
     
+
+
+def distancia_euclidiana(m):
+    m_dif=np.zeros((m.shape[0],m.shape[0]))
+    
+    for i in range(m.shape[0]):
+        for j in range(m.shape[0]):
+            if(i==j):
+                break
+            dist = np.linalg.norm(m[i,:] - m[j,:])
+            m_dif[i][j]=m_dif[j][i]=dist
+    return m_dif
+
+
+def distancia_manhattan(m):
+    m_dif=np.zeros((m.shape[0],m.shape[0]))
+    
+    for i in range(m.shape[0]):
+        for j in range(m.shape[0]):
+            if(i==j):
+                break
+            dist = distance.cityblock(m[i,:] ,m[j,:])
+            m_dif[i][j]=m_dif[j][i]=dist
+    return m_dif
+
+
+def distancia_cosseno(m):
+    m_dif=np.zeros((m.shape[0],m.shape[0]))
+    
+    for i in range(m.shape[0]):
+        for j in range(m.shape[0]):
+            if(i==j):
+                break
+            dist = distance.cosine(m[i,:] ,m[j,:])
+            m_dif[i][j]=m_dif[j][i]=dist
+    return m_dif
+
 
 
 if __name__ == "__main__":
@@ -253,18 +292,53 @@ if __name__ == "__main__":
     plt.title('RMS')
     """
     
+    #Normalizar features do ficheiro "top100_features"
+    """
     matriz = ler_fich_features("./ficheiros/top100_features.csv")
     print(matriz.shape)
     m = normalizar_features(matriz)
     escrever_em_ficheiro_csv("./ficheiros/top100_features_normalizadas.csv",m)
-    
+    """
 
     #extrair_features()
     
-    
+    #Normalizar features extraidas
+    """
     matriz_features_extraidas= np.genfromtxt("./ficheiros/features_extraidas.csv", delimiter=",")
     print(matriz_features_extraidas.shape)
     print(matriz_features_extraidas[0])
     mfeatures=normalizar_features(matriz_features_extraidas)
     escrever_em_ficheiro_csv("./ficheiros/features_normalizadas.csv",mfeatures)
+    """
     
+    
+    #Calcular distancias
+    #features extraidas
+    m_features = np.genfromtxt("./ficheiros/features_normalizadas.csv", delimiter=",")
+    
+    m_dist_euc = distancia_euclidiana(m_features)
+    m_dist_man = distancia_manhattan(m_features)
+    m_dist_cos = distancia_cosseno(m_features)
+    
+    print("EUC:",m_dist_euc.shape)
+    print("MAN:",m_dist_man.shape)
+    print("COS:",m_dist_cos.shape)
+
+    
+    escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_features_extraidas.csv", m_dist_euc)
+    escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_features_extraidas.csv", m_dist_man)
+    escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_features_extraidas.csv", m_dist_cos)
+    
+    
+    #top 100 features
+    """
+    m_100_features = np.genfromtxt("./ficheiros/top100_features_normalizadas.csv", delimiter=",")
+    
+    m100_dist_euc = distancia_euclidiana(m_100_features)
+    m100_dist_man = distancia_manhattan(m_100_features)
+    m100_dist_cos = distancia_cosseno(m_100_features)
+    
+    escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_100_features.csv", m100_dist_euc)
+    escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_100_features.csv", m100_dist_man)
+    escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_100_features.csv", m100_dist_cos)
+    """
