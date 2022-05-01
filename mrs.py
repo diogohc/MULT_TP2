@@ -16,15 +16,12 @@ import os
 import matplotlib.pyplot as plt
 import scipy.stats as st
 from scipy.spatial import distance
+import csv
+
 
 warnings.filterwarnings("ignore")
 
-sampleRate = 22050
-WL = 92.88
-useMono = True
-frame_length = 92.88
-ms = 23.22
-hop_length = 23.22
+
 dim_mfcc = 13
 num_stats = 7
 
@@ -33,6 +30,14 @@ filesPath = "./dataset/all/"
 files = os.listdir(filesPath)
 numFiles = len(files)
 
+
+#flags
+NORMALIZAR_100_FEATURES = False
+EXTRAIR_FEATURES = False
+NORMALIZAR_FEATURES_EXTRAIDAS = False
+CALCULAR_DISTANCIAS_100_FEATURES = False
+CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
+CRIAR_RANKING = True
 
 
 def ler_fich_features(nome_fich):
@@ -57,17 +62,11 @@ def normalizar_features(m):
     for i in range(nc):
         maximo = m[:,i].max()
         minimo = m[:,i].min()
-        m_normalizada[:,i] = (m[:,i]-minimo) / (maximo-minimo)
+        if (maximo-minimo == 0):
+            m_normalizada[:,i] = 0 # estou na duvida se é 0 ou 1
+        else:
+            m_normalizada[:,i] = (m[:,i]-minimo) / (maximo-minimo)
     return m_normalizada
-
-
-def normalizar_vetor(v):
-    v_normalizado = v
-    for i in range(v.shape[0]):
-        maximo = v.max()
-        minimo = v.min()
-        v_normalizado[i] = (v[i]-minimo) / (maximo-minimo)
-    return v_normalizado
 
 
 def escrever_em_ficheiro_csv(nome, matriz):
@@ -111,19 +110,19 @@ def extrair_mfcc_e_calcular_stats(y):
 
 
 def extrair_spec_centroid_e_calcular_stats(y):
-    sc = librosa.feature.spectral_centroid(y, sr=sampleRate)
+    sc = librosa.feature.spectral_centroid(y)
     sc_stats = calcular_estatisticas(sc)
     return sc_stats
 
 
 def extrair_spec_bandwith_e_calcular_stats(y):
-    spec_bw = librosa.feature.spectral_bandwidth(y, sr=sampleRate)
+    spec_bw = librosa.feature.spectral_bandwidth(y)
     spec_bw_stats = calcular_estatisticas(spec_bw)
     return spec_bw_stats
     
 
 def extrair_spec_contrast_e_calcular_stats(y):
-    spec_cont=librosa.feature.spectral_contrast(y, sr=sampleRate)
+    spec_cont=librosa.feature.spectral_contrast(y)
     spec_cont_stats=calcular_estatisticas(spec_cont)
     return spec_cont_stats
 
@@ -255,90 +254,132 @@ def distancia_cosseno(m):
 
 
 
+def tratar_linha(nome_query, linha):
+    ranking_musicas=np.array([nome_query])
+    
+    indices_para_ordenacao = np.argsort(linha)
+    
+    ranking20 = indices_para_ordenacao[1:21]
+    
+    ranking_ord_dec = np.flip(ranking20)
+    
+    for indice in ranking_ord_dec:
+        ranking_musicas = np.append(ranking_musicas, files[indice])
+    
+    return ranking_musicas
+
+
+
+def cria_ranking(query1, query2, query3, query4, m_distancias):
+    mranking=np.array(["."]*21)
+    array_querys = [query1, query2, query3, query4]
+    
+    while(array_querys):
+        for i in range(len(files)):
+            if(files[i] in array_querys):
+                mranking = np.vstack([mranking, tratar_linha(files[i], m_distancias[i])])
+                array_querys.remove(files[i])
+    return mranking
+
+
 if __name__ == "__main__":
     plt.close('all')
-    """
-    #--- Load file
-    fName = "Queries/MT0000414517.mp3"
-    sr = 22050
-    mono = True
-    warnings.filterwarnings("ignore")
-    y, fs = librosa.load(fName, sr=sr, mono = mono)
-    print(y.shape)
-    print(fs)
     
-    #--- Play Sound
-    #sd.play(y, sr, blocking=False)
-    
-    #--- Plot sound waveform
-    plt.figure()
-    #librosa.display.waveplot(y)
-    
-    #--- Plot spectrogram
-    Y = np.abs(librosa.stft(y))
-    Ydb = librosa.amplitude_to_db(Y, ref=np.max)
-    fig, ax = plt.subplots()
-    img = librosa.display.specshow(Ydb, y_axis='log', x_axis='time', ax=ax)
-    ax.set_title('Power spectrogram')
-    fig.colorbar(img, ax=ax, format="%+2.0f dB")
-        
-    #--- Extract features    
-    rms = librosa.feature.rms(y = y)
-    rms = rms[0, :]
-    print(rms.shape)
-    times = librosa.times_like(rms)
-    plt.figure(), plt.plot(times, rms)
-    plt.xlabel('Time (s)')
-    plt.title('RMS')
-    """
-    
-    #Normalizar features do ficheiro "top100_features"
-    """
-    matriz = ler_fich_features("./ficheiros/top100_features.csv")
-    print(matriz.shape)
-    m = normalizar_features(matriz)
-    escrever_em_ficheiro_csv("./ficheiros/top100_features_normalizadas.csv",m)
-    """
+    #Normalizar features do ficheiro "top100_features"-------------------------------------------------
+    if(NORMALIZAR_100_FEATURES):
+        matriz = ler_fich_features("./ficheiros/top100_features.csv")
+        print(matriz.shape)
+        m = normalizar_features(matriz)
+        escrever_em_ficheiro_csv("./ficheiros/top100_features_normalizadas.csv",m)
 
-    #extrair_features()
+
+    if(EXTRAIR_FEATURES):
+        extrair_features()
     
     #Normalizar features extraidas
-    """
-    matriz_features_extraidas= np.genfromtxt("./ficheiros/features_extraidas.csv", delimiter=",")
-    print(matriz_features_extraidas.shape)
-    print(matriz_features_extraidas[0])
-    mfeatures=normalizar_features(matriz_features_extraidas)
-    escrever_em_ficheiro_csv("./ficheiros/features_normalizadas.csv",mfeatures)
-    """
+    if(NORMALIZAR_FEATURES_EXTRAIDAS):
+        matriz_features_extraidas= np.genfromtxt("./ficheiros/features_extraidas.csv", delimiter=",")
+        mfeatures=normalizar_features(matriz_features_extraidas)
+        escrever_em_ficheiro_csv("./ficheiros/features_normalizadas.csv",mfeatures)
+    #--------------------------------------------------------------------------------------------
     
     
-    #Calcular distancias
+    #CALCULAR DISTANCIAS-------------------------------------------------------------------
     #features extraidas
-    m_features = np.genfromtxt("./ficheiros/features_normalizadas.csv", delimiter=",")
+    if(CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS):
+        m_features = np.genfromtxt("./ficheiros/features_normalizadas.csv", delimiter=",")
     
-    m_dist_euc = distancia_euclidiana(m_features)
-    m_dist_man = distancia_manhattan(m_features)
-    m_dist_cos = distancia_cosseno(m_features)
-    
-    print("EUC:",m_dist_euc.shape)
-    print("MAN:",m_dist_man.shape)
-    print("COS:",m_dist_cos.shape)
+        m_dist_euc = distancia_euclidiana(m_features)
+        m_dist_man = distancia_manhattan(m_features)
+        m_dist_cos = distancia_cosseno(m_features)
 
     
-    escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_features_extraidas.csv", m_dist_euc)
-    escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_features_extraidas.csv", m_dist_man)
-    escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_features_extraidas.csv", m_dist_cos)
-    
+        escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_features_extraidas.csv", m_dist_euc)
+        escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_features_extraidas.csv", m_dist_man)
+        escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_features_extraidas.csv", m_dist_cos)
+
     
     #top 100 features
-    """
-    m_100_features = np.genfromtxt("./ficheiros/top100_features_normalizadas.csv", delimiter=",")
+    if(CALCULAR_DISTANCIAS_100_FEATURES):
+        m_100_features = np.genfromtxt("./ficheiros/top100_features_normalizadas.csv", delimiter=",")
+        
+        m100_dist_euc = distancia_euclidiana(m_100_features)
+        m100_dist_man = distancia_manhattan(m_100_features)
+        m100_dist_cos = distancia_cosseno(m_100_features)
+        
+        escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_100_features.csv", m100_dist_euc)
+        escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_100_features.csv", m100_dist_man)
+        escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_100_features.csv", m100_dist_cos)
+    #--------------------------------------------------------------------------------------------
+        
+        
+        
+    #Criar ranking
+    if(CRIAR_RANKING):
+        q1 = "MT0000202045.mp3"
+        q2 = "MT0000379144.mp3"
+        q3 = "MT0000414517.mp3"
+        q4 = "MT0000956340.mp3"
+        
+        #top 100 features
+        #euclidiana
+        dist_100_euc = np.genfromtxt("./ficheiros/dist_euclidiana_100_features.csv", delimiter=",")
+        m_ranking_100_euc = cria_ranking(q1, q2, q3, q4, dist_100_euc)
+        np.savetxt("./ficheiros/rankings/ranking_100_features_euclidiana.csv", m_ranking_100_euc[1:], 
+                   delimiter=',',fmt='%s')
+        
+        #manhattan
+        dist_100_man = np.genfromtxt("./ficheiros/dist_manhattan_100_features.csv", delimiter=",")
+        m_ranking_100_man = cria_ranking(q1, q2, q3, q4, dist_100_man)
+        np.savetxt("./ficheiros/rankings/ranking_100_features_manhattan.csv", m_ranking_100_man[1:], 
+                   delimiter=',',fmt='%s')
     
-    m100_dist_euc = distancia_euclidiana(m_100_features)
-    m100_dist_man = distancia_manhattan(m_100_features)
-    m100_dist_cos = distancia_cosseno(m_100_features)
     
-    escrever_em_ficheiro_csv("./ficheiros/dist_euclidiana_100_features.csv", m100_dist_euc)
-    escrever_em_ficheiro_csv("./ficheiros/dist_manhattan_100_features.csv", m100_dist_man)
-    escrever_em_ficheiro_csv("./ficheiros/dist_cosseno_100_features.csv", m100_dist_cos)
-    """
+        #cosseno
+        dist_100_cos = np.genfromtxt("./ficheiros/dist_cosseno_100_features.csv", delimiter=",")
+        m_ranking_100_cos = cria_ranking(q1, q2, q3, q4, dist_100_cos)
+        np.savetxt("./ficheiros/rankings/ranking_100_features_cosseno.csv", m_ranking_100_cos[1:], 
+                   delimiter=',',fmt='%s')
+    
+    
+        #features extraidas
+        #euclidiana
+        dist_100_euc = np.genfromtxt("./ficheiros/dist_euclidiana_features_extraidas.csv", delimiter=",")
+        m_ranking_100_euc = cria_ranking(q1, q2, q3, q4, dist_100_euc)
+        np.savetxt("./ficheiros/rankings/ranking_features_extraidas__euclidiana.csv", m_ranking_100_euc[1:], 
+                   delimiter=',',fmt='%s')
+        
+        #manhattan
+        dist_100_man = np.genfromtxt("./ficheiros/dist_manhattan_features_extraidas.csv", delimiter=",")
+        m_ranking_100_man = cria_ranking(q1, q2, q3, q4, dist_100_man)
+        np.savetxt("./ficheiros/rankings/ranking_features_extraidas_manhattan.csv", m_ranking_100_man[1:], 
+                   delimiter=',',fmt='%s')
+    
+    
+        #cosseno
+        dist_100_cos = np.genfromtxt("./ficheiros/dist_cosseno_features_extraidas.csv", delimiter=",")
+        m_ranking_100_cos = cria_ranking(q1, q2, q3, q4, dist_100_cos)
+        np.savetxt("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv", m_ranking_100_cos[1:], 
+                   delimiter=',',fmt='%s')
+        
+        
