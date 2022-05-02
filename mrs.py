@@ -281,6 +281,9 @@ def cria_ranking(query1, query2, query3, query4, m_distancias):
     return mranking
 
 
+
+
+
 if __name__ == "__main__":
     plt.close('all')
     
