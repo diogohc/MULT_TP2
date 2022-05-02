@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 from scipy.spatial import distance
 import csv
+import  time
+import sys
 
 
 warnings.filterwarnings("ignore")
@@ -38,6 +40,7 @@ NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
 CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
 CRIAR_RANKING = True
+OUVIR_4_2 = 1
 
 
 def ler_fich_features(nome_fich):
@@ -123,7 +126,22 @@ def extrair_spec_bandwith_e_calcular_stats(y):
 
 def extrair_spec_contrast_e_calcular_stats(y):
     spec_cont=librosa.feature.spectral_contrast(y)
-    spec_cont_stats=calcular_estatisticas(spec_cont)
+    nl, nc = spec_cont.shape
+    spec_cont_stats=np.zeros((nl,num_stats))
+
+    for i in range(nl):
+        media = np.mean(spec_cont[i,:])
+        stdev = np.std(spec_cont[i,:])
+        skewness = st.skew(spec_cont[i,:])
+        kurtosis = st.kurtosis(spec_cont[i,:])
+        median = np.median(spec_cont[i:,])
+        maximo = np.max(spec_cont[i:,])
+        minimo = np.min(spec_cont[i:,])
+        spec_cont_stats[i:,] = np.array([media, stdev, skewness, kurtosis, median, maximo, minimo])
+
+    #spec_cont_stats=calcular_estatisticas(spec_cont)
+    spec_cont_stats=spec_cont_stats.flatten()
+
     return spec_cont_stats
 
 
@@ -280,7 +298,32 @@ def cria_ranking(query1, query2, query3, query4, m_distancias):
                 array_querys.remove(files[i])
     return mranking
 
+def playing(query, ratingFile):
+    
+    if(os.path.exists(ratingFile) == False):
+        print (ratingFile," nao existe crie o ficheiro ou exprimente outro")
+        sys.exit()
+    
+    queriesList = os.listdir("./queries/")
+    #print(queriesList)
+    ind = queriesList.index(query)
+    #(ind)
+        
+   
+    playlist = np.genfromtxt(ratingFile, delimiter=",", dtype='unicode')
+    #print(playlist)
+    print(playlist[ind])
+    for i in playlist[ind]:
+        #print(type(i))
+        music = filesPath+i
+        print(music)
 
+        warnings.filterwarnings("ignore")
+        y, fs = librosa.load(music)
+        
+        #--- Play Sound
+        #sd.play(y, sr, blocking=False)
+        #time.sleep(10)
 
 
 
@@ -288,18 +331,18 @@ if __name__ == "__main__":
     plt.close('all')
     
     #Normalizar features do ficheiro "top100_features"-------------------------------------------------
-    if(NORMALIZAR_100_FEATURES):
+    if(os.path.exists("./ficheiros/top100_features_normalizadas.csv") == False):
         matriz = ler_fich_features("./ficheiros/top100_features.csv")
         print(matriz.shape)
         m = normalizar_features(matriz)
         escrever_em_ficheiro_csv("./ficheiros/top100_features_normalizadas.csv",m)
 
 
-    if(EXTRAIR_FEATURES):
+    if(os.path.exists("./ficheiros/features_extraidas.csv") == False):
         extrair_features()
     
     #Normalizar features extraidas
-    if(NORMALIZAR_FEATURES_EXTRAIDAS):
+    if(os.path.exists("./ficheiros/features_normalizadas.csv") == False):
         matriz_features_extraidas= np.genfromtxt("./ficheiros/features_extraidas.csv", delimiter=",")
         mfeatures=normalizar_features(matriz_features_extraidas)
         escrever_em_ficheiro_csv("./ficheiros/features_normalizadas.csv",mfeatures)
@@ -308,7 +351,9 @@ if __name__ == "__main__":
     
     #CALCULAR DISTANCIAS-------------------------------------------------------------------
     #features extraidas
-    if(CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS):
+    if(os.path.exists("./ficheiros/dist_euclidiana_features_extraidas.csv") == False and
+        os.path.exists("./ficheiros/dist_manhattan_features_extraidas.csv") == False and
+         os.path.exists("./ficheiros/dist_cosseno_features_extraidas.csv") == False):
         m_features = np.genfromtxt("./ficheiros/features_normalizadas.csv", delimiter=",")
     
         m_dist_euc = distancia_euclidiana(m_features)
@@ -322,7 +367,9 @@ if __name__ == "__main__":
 
     
     #top 100 features
-    if(CALCULAR_DISTANCIAS_100_FEATURES):
+    if(os.path.exists("./ficheiros/dist_euclidiana_100_features.csv") == False and
+        os.path.exists("./ficheiros/dist_manhattan_100_features.csv") == False and
+         os.path.exists("./ficheiros/dist_cosseno_100_features.csv") == False):
         m_100_features = np.genfromtxt("./ficheiros/top100_features_normalizadas.csv", delimiter=",")
         
         m100_dist_euc = distancia_euclidiana(m_100_features)
@@ -383,5 +430,12 @@ if __name__ == "__main__":
         m_ranking_100_cos = cria_ranking(q1, q2, q3, q4, dist_100_cos)
         np.savetxt("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv", m_ranking_100_cos[1:], 
                    delimiter=',',fmt='%s')
+    
+    
+    if (OUVIR_4_2):
+        
+        playing("MT0000202045.mp3", "./ficheiros/rankings/ranking_100_features_cosseno.csv")        
+        
+       
         
         
