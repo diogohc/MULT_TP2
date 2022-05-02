@@ -261,9 +261,8 @@ def tratar_linha(nome_query, linha):
     
     ranking20 = indices_para_ordenacao[1:21]
     
-    ranking_ord_dec = np.flip(ranking20)
     
-    for indice in ranking_ord_dec:
+    for indice in ranking20:
         ranking_musicas = np.append(ranking_musicas, files[indice])
     
     return ranking_musicas
