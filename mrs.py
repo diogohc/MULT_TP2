@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 from scipy.spatial import distance
 import csv
-import  time
+import time
 import sys
 
 
@@ -40,6 +40,7 @@ NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
 CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
 CRIAR_RANKING = True
+META_DATA = 1
 OUVIR_4_2 = 1
 
 
@@ -325,6 +326,39 @@ def playing(query, ratingFile):
         #sd.play(y, sr, blocking=False)
         #time.sleep(10)
 
+def metricas(rankingFile):
+    metadataRawMatrix = np.genfromtxt('panda_dataset_taffc_metadata.csv', delimiter=',', dtype="str")
+    metadata = metadataRawMatrix[1:, [1, 3, 9, 11]]
+    ranking = np.genfromtxt(rankingFile, delimiter=',', dtype="str")
+    
+    metadataScores = np.zeros((1, 21))
+    #para nao comparar a primeira muisca com ela mesma 
+    metadataScores[0, 0] = -1
+    
+    for m in range(ranking.shape[0]):
+
+        for i in range(1, ranking[0].shape[0]):
+            score = 0
+            for j in range(metadata.shape[1]):
+                #teste para artista e quadrante:
+                if j < 2:
+                    if metadata[0, j] == metadata[i, j]:
+                        score = score + 1
+                else:
+                    #teste para MoodStrSplit e GenresStr
+                    listA = metadata[0, j][1:-1].split('; ')#retira as "" do começo e fim e separa no "; "
+                    listB = metadata[i, j][1:-1].split('; ')
+                    for e in listA:
+                        for ee in listB:
+                            if e == ee:
+                                score = score + 1
+            metadataScores[0, i] = score
+        
+        print(metadataScores)
+
+        metadataScores = np.zeros((1, 21))
+        metadataScores[0, 0] = -1
+
 
 
 if __name__ == "__main__":
@@ -415,7 +449,7 @@ if __name__ == "__main__":
         #euclidiana
         dist_100_euc = np.genfromtxt("./ficheiros/dist_euclidiana_features_extraidas.csv", delimiter=",")
         m_ranking_100_euc = cria_ranking(q1, q2, q3, q4, dist_100_euc)
-        np.savetxt("./ficheiros/rankings/ranking_features_extraidas__euclidiana.csv", m_ranking_100_euc[1:], 
+        np.savetxt("./ficheiros/rankings/ranking_features_extraidas_euclidiana.csv", m_ranking_100_euc[1:], 
                    delimiter=',',fmt='%s')
         
         #manhattan
@@ -431,6 +465,15 @@ if __name__ == "__main__":
         np.savetxt("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv", m_ranking_100_cos[1:], 
                    delimiter=',',fmt='%s')
     
+    if(META_DATA):
+        metricas("./ficheiros/rankings/ranking_100_features_euclidiana.csv")
+        metricas("./ficheiros/rankings/ranking_100_features_manhattan.csv")
+        metricas("./ficheiros/rankings/ranking_100_features_cosseno.csv")
+        
+        metricas("./ficheiros/rankings/ranking_features_extraidas_euclidiana.csv")
+        metricas("./ficheiros/rankings/ranking_features_extraidas_manhattan.csv")
+        metricas("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv")
+
     
     if (OUVIR_4_2):
         
