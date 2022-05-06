@@ -38,7 +38,7 @@ NORMALIZAR_100_FEATURES = False
 EXTRAIR_FEATURES = False
 NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
-CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
+CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = True
 CRIAR_RANKING = True
 META_DATA = 1
 OUVIR_4_2 = 1
@@ -74,7 +74,7 @@ def normalizar_features(m):
 
 
 def escrever_em_ficheiro_csv(nome, matriz):
-    np.savetxt(nome, matriz, delimiter=',')
+    np.savetxt(nome, matriz, delimiter=',',fmt='%f')
     
     
 def calcular_estatisticas(array):
@@ -97,13 +97,13 @@ def extrair_mfcc_e_calcular_stats(y):
     mfcc_stats=np.zeros((nl,num_stats))
     #calcular estatisticas
     for i in range(nl):
-        media = np.mean(mfcc[i,:])
-        stdev = np.std(mfcc[i,:])
-        skewness = st.skew(mfcc[i,:])
-        kurtosis = st.kurtosis(mfcc[i,:])
-        median = np.median(mfcc[i:,])
-        maximo = np.max(mfcc[i:,])
-        minimo = np.min(mfcc[i:,])
+        media = np.mean(mfcc[i])
+        stdev = np.std(mfcc[i])
+        skewness = st.skew(mfcc[i])
+        kurtosis = st.kurtosis(mfcc[i])
+        median = np.median(mfcc[i])
+        maximo = np.max(mfcc[i])
+        minimo = np.min(mfcc[i])
         mfcc_stats[i:,] = np.array([media, stdev, skewness, kurtosis, median, maximo, minimo])
         #mfcc_stats[i:,] = calcular_estatisticas(mfcc[i,:])
         
@@ -131,13 +131,13 @@ def extrair_spec_contrast_e_calcular_stats(y):
     spec_cont_stats=np.zeros((nl,num_stats))
 
     for i in range(nl):
-        media = np.mean(spec_cont[i,:])
-        stdev = np.std(spec_cont[i,:])
-        skewness = st.skew(spec_cont[i,:])
-        kurtosis = st.kurtosis(spec_cont[i,:])
-        median = np.median(spec_cont[i:,])
-        maximo = np.max(spec_cont[i:,])
-        minimo = np.min(spec_cont[i:,])
+        media = np.mean(spec_cont[i])
+        stdev = np.std(spec_cont[i])
+        skewness = st.skew(spec_cont[i])
+        kurtosis = st.kurtosis(spec_cont[i])
+        median = np.median(spec_cont[i])
+        maximo = np.max(spec_cont[i])
+        minimo = np.min(spec_cont[i])
         spec_cont_stats[i:,] = np.array([media, stdev, skewness, kurtosis, median, maximo, minimo])
 
     #spec_cont_stats=calcular_estatisticas(spec_cont)
@@ -243,7 +243,7 @@ def distancia_euclidiana(m):
         for j in range(m.shape[0]):
             if(i==j):
                 break
-            dist = np.linalg.norm(m[i,:] - m[j,:])
+            dist = np.linalg.norm(m[i] - m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
 
@@ -255,7 +255,7 @@ def distancia_manhattan(m):
         for j in range(m.shape[0]):
             if(i==j):
                 break
-            dist = distance.cityblock(m[i,:] ,m[j,:])
+            dist = distance.cityblock(m[i] ,m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
 
@@ -267,7 +267,7 @@ def distancia_cosseno(m):
         for j in range(m.shape[0]):
             if(i==j):
                 break
-            dist = distance.cosine(m[i,:] ,m[j,:])
+            dist = distance.cosine(m[i] ,m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
 
