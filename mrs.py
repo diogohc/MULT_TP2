@@ -39,7 +39,8 @@ EXTRAIR_FEATURES = False
 NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
 CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
-CRIAR_RANKING = False
+CRIAR_RANKING_DIFERENCAS = False
+CRIAR_RANKING_METADADOS = True
 META_DATA = 1
 OUVIR_4_2 = 1
 
@@ -384,6 +385,34 @@ def similaridade_metadados(m):
     return msimilaridade
 
 
+
+def tratar_linha_metadados(nome_query, linha):
+    ranking_musicas=np.array([nome_query])
+            
+    indices_para_ordenacao = np.argsort(linha)
+    
+    ranking20 = indices_para_ordenacao[-20:]
+    
+    
+    for indice in ranking20:
+        ranking_musicas = np.append(ranking_musicas, files[indice])
+    
+    return ranking_musicas
+
+
+def criar_ranking_metadados(query1, query2, query3, query4, m_metadados):
+    mranking=np.array(["."]*21)
+    array_querys = [query1, query2, query3, query4]
+    
+    while(array_querys):
+        for i in range(len(files)):
+            if(files[i] in array_querys):
+                mranking = np.vstack([mranking, np.flip(tratar_linha_metadados(files[i], m_metadados[i]))])
+                array_querys.remove(files[i])
+    return mranking[1:]
+
+
+
 if __name__ == "__main__":
     plt.close('all')
     
@@ -441,7 +470,7 @@ if __name__ == "__main__":
         
         
     #Criar ranking
-    if(CRIAR_RANKING):
+    if(CRIAR_RANKING_DIFERENCAS):
         q1 = "MT0000202045.mp3"
         q2 = "MT0000379144.mp3"
         q3 = "MT0000414517.mp3"
@@ -502,10 +531,27 @@ if __name__ == "__main__":
         
         playing("MT0000202045.mp3", "./ficheiros/rankings/ranking_100_features_cosseno.csv")   """
         
-    matriz_meta_dados = np.genfromtxt('./ficheiros/panda_dataset_taffc_metadata.csv', dtype="str", delimiter=",")
-    matriz_similaridade_metadados = similaridade_metadados(matriz_meta_dados)
-    np.savetxt("./ficheiros/mat_similaridade_metadados.csv", matriz_similaridade_metadados, 
+    if(os.path.exists("./ficheiros/mat_similaridade_metadados.csv") == False):
+        matriz_meta_dados = np.genfromtxt('./ficheiros/panda_dataset_taffc_metadata.csv', dtype="str", delimiter=",")
+        matriz_similaridade_metadados = similaridade_metadados(matriz_meta_dados)
+        np.savetxt("./ficheiros/mat_similaridade_metadados.csv", matriz_similaridade_metadados, 
                    delimiter=',',fmt="%i")
+        
+        
+    if(CRIAR_RANKING_METADADOS):
+        q1 = "MT0000202045.mp3"
+        q2 = "MT0000379144.mp3"
+        q3 = "MT0000414517.mp3"
+        q4 = "MT0000956340.mp3"
+        
+        mat_metadados = np.genfromtxt('./ficheiros/mat_similaridade_metadados.csv',  delimiter=",")
+        
+        m_ranking_metadados = criar_ranking_metadados(q1, q2, q3, q4, mat_metadados)
+        np.savetxt("./ficheiros/rankings/ranking_metadados.csv", m_ranking_metadados, 
+                   delimiter=',', fmt="%s")
+        
+        
        
+    
         
         
