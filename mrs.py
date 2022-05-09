@@ -39,8 +39,9 @@ EXTRAIR_FEATURES = False
 NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
 CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
-CRIAR_RANKING_DIFERENCAS = False
+CRIAR_RANKING_DIFERENCAS = True
 CRIAR_RANKING_METADADOS = True
+CALCULAR_PRECISAO = True
 META_DATA = 1
 OUVIR_4_2 = 1
 
@@ -241,9 +242,7 @@ def distancia_euclidiana(m):
     m_dif=np.zeros((m.shape[0],m.shape[0]))
     
     for i in range(m.shape[0]):
-        for j in range(m.shape[0]):
-            if(i==j):
-                break
+        for j in range(i):
             dist = np.linalg.norm(m[i] - m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
@@ -253,9 +252,7 @@ def distancia_manhattan(m):
     m_dif=np.zeros((m.shape[0],m.shape[0]))
     
     for i in range(m.shape[0]):
-        for j in range(m.shape[0]):
-            if(i==j):
-                break
+        for j in range(i):
             dist = distance.cityblock(m[i] ,m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
@@ -265,9 +262,7 @@ def distancia_cosseno(m):
     m_dif=np.zeros((m.shape[0],m.shape[0]))
     
     for i in range(m.shape[0]):
-        for j in range(m.shape[0]):
-            if(i==j):
-                break
+        for j in range(i):
             dist = distance.cosine(m[i] ,m[j])
             m_dif[i][j]=m_dif[j][i]=dist
     return m_dif
@@ -292,41 +287,19 @@ def tratar_linha(nome_query, linha):
 def cria_ranking(query1, query2, query3, query4, m_distancias):
     mranking=np.array(["."]*21)
     array_querys = [query1, query2, query3, query4]
-    
+    """
     while(array_querys):
         for i in range(len(files)):
             if(files[i] in array_querys):
                 mranking = np.vstack([mranking, tratar_linha(files[i], m_distancias[i])])
                 array_querys.remove(files[i])
+    """     
+    for query in array_querys:
+        indice_query = files.index(query)
+        mranking = np.vstack([mranking, tratar_linha(query, m_distancias[indice_query])])
+        
     return mranking
 
-
-def playing(query, ratingFile):
-    
-    if(os.path.exists(ratingFile) == False):
-        print (ratingFile," nao existe crie o ficheiro ou exprimente outro")
-        sys.exit()
-    
-    queriesList = os.listdir("./queries/")
-    #print(queriesList)
-    ind = queriesList.index(query)
-    #(ind)
-        
-   
-    playlist = np.genfromtxt(ratingFile, delimiter=",", dtype='unicode')
-    #print(playlist)
-    print(playlist[ind])
-    for i in playlist[ind]:
-        #print(type(i))
-        music = filesPath+i
-        print(music)
-
-        warnings.filterwarnings("ignore")
-        y, fs = librosa.load(music)
-        
-        #--- Play Sound
-        #sd.play(y, sr, blocking=False)
-        #time.sleep(10)
 
 
 
@@ -386,8 +359,9 @@ def similaridade_metadados(m):
 
 
 
+
 def tratar_linha_metadados(nome_query, linha):
-    ranking_musicas=np.array([nome_query])
+    ranking_musicas=np.array(["."])
             
     indices_para_ordenacao = np.argsort(linha)
     
@@ -397,6 +371,8 @@ def tratar_linha_metadados(nome_query, linha):
     for indice in ranking20:
         ranking_musicas = np.append(ranking_musicas, files[indice])
     
+    ranking_musicas=np.flip(ranking_musicas[1:])
+    ranking_musicas = np.insert(ranking_musicas, 0, nome_query)
     return ranking_musicas
 
 
@@ -407,10 +383,49 @@ def criar_ranking_metadados(query1, query2, query3, query4, m_metadados):
     while(array_querys):
         for i in range(len(files)):
             if(files[i] in array_querys):
-                mranking = np.vstack([mranking, np.flip(tratar_linha_metadados(files[i], m_metadados[i]))])
+                mranking = np.vstack([mranking, tratar_linha_metadados(files[i], m_metadados[i])])
                 array_querys.remove(files[i])
     return mranking[1:]
 
+
+
+
+def calcular_precisao(matriz_ranking_dif, matriz_ranking_metadados):
+    mprecisao = np.array([0]*2)
+    for i in range(matriz_ranking_dif.shape[0]):
+        v_intersecao = np.intersect1d(matriz_ranking_dif[i][1:], matriz_ranking_metadados[i][1:])
+        v_precisao = np.array([matriz_ranking_dif[i][0], v_intersecao.shape[0]])
+        mprecisao = np.vstack([mprecisao, v_precisao])
+    return mprecisao[1:]
+
+
+
+def playing(query, ratingFile):
+    
+    if(os.path.exists(ratingFile) == False):
+        print (ratingFile," nao existe crie o ficheiro ou exprimente outro")
+        sys.exit()
+    
+    queriesList = os.listdir("./queries/")
+    #print(queriesList)
+    ind = queriesList.index(query)
+    #(ind)
+        
+   
+    playlist = np.genfromtxt(ratingFile, delimiter=",", dtype='unicode')
+    #print(playlist)
+    print(playlist[ind])
+    for i in playlist[ind]:
+        #print(type(i))
+        music = filesPath+i
+        print(music)
+
+        warnings.filterwarnings("ignore")
+        y, fs = librosa.load(music)
+        
+        #--- Play Sound
+        #sd.play(y, sr, blocking=False)
+        #time.sleep(10)
 
 
 if __name__ == "__main__":
@@ -549,6 +564,22 @@ if __name__ == "__main__":
         m_ranking_metadados = criar_ranking_metadados(q1, q2, q3, q4, mat_metadados)
         np.savetxt("./ficheiros/rankings/ranking_metadados.csv", m_ranking_metadados, 
                    delimiter=',', fmt="%s")
+        
+        
+        
+    #calcular precisao
+    if(CALCULAR_PRECISAO):
+        #matriz metadados
+        m_ranking_metadados = np.genfromtxt("./ficheiros/rankings/ranking_metadados.csv", dtype="str",delimiter=",")
+        
+        #100 features
+        
+        #euclididana
+        ranking_100_euc = np.genfromtxt("./ficheiros/rankings/ranking_100_features_euclidiana.csv", dtype="str"
+                                        ,delimiter=",")
+        precisao_100_euc = calcular_precisao(ranking_100_euc, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_100_features_euclidiana.csv", precisao_100_euc,
+                   delimiter = ",", fmt="%s")
         
         
        
