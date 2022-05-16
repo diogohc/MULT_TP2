@@ -39,7 +39,7 @@ EXTRAIR_FEATURES = False
 NORMALIZAR_FEATURES_EXTRAIDAS = False
 CALCULAR_DISTANCIAS_100_FEATURES = False
 CALCULAR_DISTANCIAS_FEATURES_EXTRAIDAS = False
-CRIAR_RANKING_DIFERENCAS = True
+CRIAR_RANKING_DIFERENCAS = False
 CRIAR_RANKING_METADADOS = True
 CALCULAR_PRECISAO = True
 META_DATA = 1
@@ -379,12 +379,10 @@ def tratar_linha_metadados(nome_query, linha):
 def criar_ranking_metadados(query1, query2, query3, query4, m_metadados):
     mranking=np.array(["."]*21)
     array_querys = [query1, query2, query3, query4]
-    
-    while(array_querys):
-        for i in range(len(files)):
-            if(files[i] in array_querys):
-                mranking = np.vstack([mranking, tratar_linha_metadados(files[i], m_metadados[i])])
-                array_querys.remove(files[i])
+                
+    for query in array_querys:
+        indice_query = files.index(query)
+        mranking = np.vstack([mranking, tratar_linha_metadados(query, m_metadados[indice_query])])
     return mranking[1:]
 
 
@@ -394,7 +392,7 @@ def calcular_precisao(matriz_ranking_dif, matriz_ranking_metadados):
     mprecisao = np.array([0]*2)
     for i in range(matriz_ranking_dif.shape[0]):
         v_intersecao = np.intersect1d(matriz_ranking_dif[i][1:], matriz_ranking_metadados[i][1:])
-        v_precisao = np.array([matriz_ranking_dif[i][0], v_intersecao.shape[0]])
+        v_precisao = np.array([matriz_ranking_dif[i][0], v_intersecao.shape[0]/20])
         mprecisao = np.vstack([mprecisao, v_precisao])
     return mprecisao[1:]
 
@@ -426,11 +424,9 @@ def playing(query, ratingFile):
         #--- Play Sound
         #sd.play(y, sr, blocking=False)
         #time.sleep(10)
-
-
-if __name__ == "__main__":
-    plt.close('all')
-    
+        
+        
+def main():
     #Normalizar features do ficheiro "top100_features"-------------------------------------------------
     if(os.path.exists("./ficheiros/top100_features_normalizadas.csv") == False):
         matriz = ler_fich_features("./ficheiros/top100_features.csv")
@@ -532,19 +528,11 @@ if __name__ == "__main__":
         np.savetxt("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv", m_ranking_100_cos[1:], 
                    delimiter=',',fmt='%s')
     
-    """if(META_DATA):
-        metricas("./ficheiros/rankings/ranking_100_features_euclidiana.csv")
-        metricas("./ficheiros/rankings/ranking_100_features_manhattan.csv")
-        metricas("./ficheiros/rankings/ranking_100_features_cosseno.csv")
-        
-        metricas("./ficheiros/rankings/ranking_features_extraidas_euclidiana.csv")
-        metricas("./ficheiros/rankings/ranking_features_extraidas_manhattan.csv")
-        metricas("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv")
-
-    
+    """    
     if (OUVIR_4_2):
         
-        playing("MT0000202045.mp3", "./ficheiros/rankings/ranking_100_features_cosseno.csv")   """
+        playing("MT0000202045.mp3", "./ficheiros/rankings/ranking_100_features_cosseno.csv")   
+    """
         
     if(os.path.exists("./ficheiros/mat_similaridade_metadados.csv") == False):
         matriz_meta_dados = np.genfromtxt('./ficheiros/panda_dataset_taffc_metadata.csv', dtype="str", delimiter=",")
@@ -581,8 +569,51 @@ if __name__ == "__main__":
         np.savetxt("./ficheiros/precisoes/precisao_100_features_euclidiana.csv", precisao_100_euc,
                    delimiter = ",", fmt="%s")
         
+        #manhattan
+        ranking_100_man = np.genfromtxt("./ficheiros/rankings/ranking_100_features_manhattan.csv", dtype="str"
+                                        , delimiter=",")
+        precisao_100_man = calcular_precisao(ranking_100_man, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_100_features_manhattan.csv", precisao_100_man, 
+                   delimiter = ",", fmt="%s")
         
-       
+        #cossenco
+        ranking_100_cos = np.genfromtxt("./ficheiros/rankings/ranking_100_features_cosseno.csv", dtype="str"
+                                        , delimiter=",")
+        precisao_100_cos = calcular_precisao(ranking_100_cos, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_100_features_cosseno.csv", precisao_100_cos, 
+                   delimiter = ",", fmt="%s")
+        
+        
+        #features extraidas
+        
+        #euclididana
+        ranking_extr_euc = np.genfromtxt("./ficheiros/rankings/ranking_features_extraidas_euclidiana.csv", dtype="str"
+                                        ,delimiter=",")
+        precisao_extr_euc = calcular_precisao(ranking_extr_euc, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_features_extraidas_euclidiana.csv", precisao_extr_euc,
+                   delimiter = ",", fmt="%s")
+        
+        #manhattan
+        ranking_extr_man = np.genfromtxt("./ficheiros/rankings/ranking_features_extraidas_manhattan.csv", dtype="str"
+                                        , delimiter=",")
+        precisao_extr_man = calcular_precisao(ranking_extr_man, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_features_extraidas_manhattan.csv", precisao_extr_man, 
+                   delimiter = ",", fmt="%s")
+        
+        #cossenco
+        ranking_extr_cos = np.genfromtxt("./ficheiros/rankings/ranking_features_extraidas_cosseno.csv", dtype="str"
+                                        , delimiter=",")
+        precisao_extr_cos = calcular_precisao(ranking_extr_cos, m_ranking_metadados)
+        np.savetxt("./ficheiros/precisoes/precisao_features_extraidas_cosseno.csv", precisao_extr_cos, 
+                   delimiter = ",", fmt="%s")
+
+
+
+if __name__ == "__main__":
+    plt.close('all')
+    main()
+    
+    
     
         
         
